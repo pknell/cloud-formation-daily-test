@@ -2,6 +2,10 @@ provider "aws" {
   region = "us-west-2"
 }
 
+variable "ssh_key_name" {
+  type = "string"
+}
+
 resource "aws_iam_policy" "manage_environment_iam_policy" {
   name = "ManageEnvPolicy"
   policy = "${file("manage-environment-policy.json")}"
@@ -62,4 +66,22 @@ resource "aws_cloudwatch_event_rule" "start_environment_rule" {
 resource "aws_cloudwatch_event_rule" "stop_environment_rule" {
   name                = "StopEnvironmentRule"
   schedule_expression = "cron(0 15 ? * 2-6 *)"
+}
+
+resource "aws_cloudwatch_event_target" "start_environment_rule_target" {
+  target_id = "start_environment_rule_target"
+  rule      = "${aws_cloudwatch_event_rule.start_environment_rule.name}"
+  arn       = "${aws_lambda_function.start_environment_lambda.arn}"
+  input     = <<EOF
+{ "stackName": "MyStack", "keyPairName": "${var.ssh_key_name}" }
+EOF
+}
+
+resource "aws_cloudwatch_event_target" "stop_environment_rule_target" {
+  target_id = "stop_environment_rule_target"
+  rule      = "${aws_cloudwatch_event_rule.stop_environment_rule.name}"
+  arn       = "${aws_lambda_function.stop_environment_lambda.arn}"
+  input     = <<EOF
+{ "stackName": "MyStack" }
+EOF
 }
