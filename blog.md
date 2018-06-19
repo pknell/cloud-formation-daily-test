@@ -101,8 +101,8 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 ```
-This provider configuration provides the region, which is required when using Terraform with AWS. 
-If the provider was omitted, Terraform will prompt you to enter the region.
+This provider specifies the region, which is required when using Terraform with AWS. 
+If the region was omitted, Terraform will prompt for it (similar to the prompt for the ssh_key_name).
 The aws_caller_identity and aws_region data sources are used later in the template when we need to reference
 the current region and account ID.
 
@@ -149,9 +149,10 @@ resource "aws_iam_policy_attachment" "manage_environment_iam_policy_attachment" 
 }
 ```
 The role (called "manage_environment_iam_role") is associated to a policy (called "manage_environment_iam_policy") 
-by means of the "manage_environment_iam_policy_attachment". The policy is separated in a json file that follows the
+by means of the "manage_environment_iam_policy_attachment". The policy is separated in a JSON file that follows the
 AWS policy JSON format. The policy I'm using includes all the permissions needed for the Docker CF template but
-intentionally excludes items such as Billing, KMS, and deletion of CloudTrail logs. You'll need to create a policy 
+intentionally excludes items such as Billing, KMS, and deletion of CloudTrail logs. If you're using your project's
+CF template, instead of the one used in this example, you'll need to create a policy 
 (or customize this one) to meet the needs of your application stack and organization's requirements.
 
 With the IAM role available, we can move on to creation of the Lambda functions:
@@ -290,7 +291,7 @@ EOF
 }
 ```
 
-Here you can see the cron expressions that define when each rule is triggered, as well as each "target" that specifies which Lambda function is called and the parameters (as JSON) to pass into the function.  Notice that the "input" for "start_environment_rule_target" includes the "ssh_key_name" variable--so that the nodes of the Docker Swarm cluster will allow for SSH access only by the specified key.
+Here you can see the cron expressions that define when each rule is triggered, as well as each "target" that specifies which Lambda function is called and the parameters (as JSON) to pass into the function.  Notice that the "input" for "start_environment_rule_target" includes the "ssh_key_name" variable--so that the nodes of the Docker Swarm cluster will allow SSH access only by the specified key.
 
 After creating the rules, we need to authorize them to call the Lambda functions:
 ```
@@ -313,10 +314,10 @@ resource "aws_lambda_permission" "allow_cloudwatch_stop_env" {
 
 The creation of these (above) permissions is done for you automatically when you're using the AWS console, but with
 Terraform it needs to be done explicitly. The aws_lambda_permission resource also has an optional qualifier attribute
-(though I'm not using here) which allows you to specify a particular version of the Lambda function.
+(although I'm not using it here) which allows you to specify a particular version of the Lambda function.
 
 The last task is to set-up email notification so that someone will be notified whenever the CF stack creation
-or deletion is unsuccessful. The process for doing this is somewhat tedious with the current version of CloudFormation,
+or deletion is unsuccessful. The process for doing this is somewhat tedious,
 but AWS has [documented it here](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-rollback-email/).
 
 ## Clean-up
@@ -324,7 +325,13 @@ You can delete all the resources that Terraform created by returning to the shel
 directory and running the command "terraform destroy". If you want to leave the resources in place, but disable the
 daily test, you can simply disable both CloudWatch rules. You can do this in the AWS console, or you can edit both
 of the aws_cloudwatch_event_rule resources in start-stop-environment.tf so that they contain "enabled = false", and 
-then run "terraform apply".
+then run "terraform apply". When you're done, if you're no longer planning to use your AWS account for other purposes,
+you can delete it by:
+1. Delete all resources (e.g., "terraform destroy" as previously described)
+1. In AWS console, click your username (the drop-down in the upper-right) 
+1. Select "My Account"
+1. Look for the "Close Account" section at the very bottom of the page and read the disclaimer
+1. Click the checkbox and the red button
 
 ## Conclusion
 Although there are a number of components involved (i.e., IAM, CloudWatch, Lambda, CloudFormation), the solution for
