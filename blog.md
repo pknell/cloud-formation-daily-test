@@ -1,20 +1,25 @@
-# Infrastructure Automated Testing
+# AWS Infrastructure Automated Testing
 
 When it comes to Amazon Web Services (AWS), most infrastructure scripting is done using either
-CloudFormation (CF), which is an AWS service, or Terraform (an open-source tool). These tools allow for
-the creation of template files that represent the configuration of your cloud environment thereby allowing
-you to easily create additional similar environments for purposes such as testing, quality assurance, and
-disaster recovery. Since the template itself is code, it should be tested periodically to ensure that it
-still works so you can have confidence in the functionality of the template itself.  For example, a template
-developed during an initial development phase might not be needed again until months later when a second
-phase begins. A simple daily test of the template will allow your team to be notified if the template
-happens to break (perhaps due to updates of dependent services/packages).
+[CloudFormation (CF)](https://aws.amazon.com/cloudformation), which is an AWS service,
+or [Terraform](https://www.terraform.io/) (an open-source tool). These tools allow you to represent all the
+resources in your cloud environment using template files, thereby allowing
+you to easily create additional similar environments for purposes such as development, testing, and 
+quality assurance. These extra test environments are not necessarily always needed--sometimes they're
+only needed during daytime hours, or sometimes only during certain project phases. By testing your templates
+periodically (such as each weekday), you'll have confidence that they work and are being properly maintained.
+Furthermore, if you have a test environment that only needs to run during the day, and not at night (for cost savings),
+you can test your template each morning and test the tear-down each night. But how can you automate this?
+Answer: Lambda + CloudWatch Scheduled Events.
 
 This blog works through setting up this kind of daily test.
-For the sake of an example, we are using the "Docker for AWS Community Edition" template as the environment
-that the test stands-up and then tears-down, but the idea is that you would use your project's template
-instead.
-The image below depicts the entire setup, and we'll walk through a Terraform script that creates this setup.
+For the sake of an example, we are using the [Docker for AWS Community Edition](https://docs.docker.com/docker-for-aws/#quickstart)
+as the CF template that's being tested, but the idea is that you would use your own 
+project's template instead. We're also using a Terraform template in order to set up the test and give it an
+automated daily schedule. However, instead of Terraform, you could accomplish the same result using CloudFormation or manually using
+the AWS console.
+The image below depicts the entire setup, and we'll walk through how to run and understand the Terraform template
+that sets everything up.
 All you will need is an AWS account and a local installation of Terraform. 
 
 ![Overview Diagram](https://github.com/pknell/cloud-formation-daily-test/blob/master/diagram.png)
@@ -47,13 +52,20 @@ you can view the stack being deleted.
 
 ## Terraform Walk-Through
 The Terraform template file is called [start-stop-environment.tf](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment.tf).
-This file starts with a provider:
+This file starts with a provider and a couple data sources:
 ```
 provider "aws" {
   region = "us-west-2"
 }
+
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
 ```
-This provider configuration provides the region, which is required when using Terraform with AWS. If omitted, Terraform will prompt you to enter the region.
+This provider configuration provides the region, which is required when using Terraform with AWS. 
+If the provider was omitted, Terraform will prompt you to enter the region.
+The aws_caller_identity and aws_region data sources are used later in the template when we need to reference
+the current region and account ID.
 
 After the provider, the template declares a variable called ssh_key_name. This is needed because it's a required
 parameter to the CF template (for Docker) that we're running. Terraform prompts the user for this value if it's not
@@ -241,6 +253,29 @@ EOF
 
 Here you can see the cron expressions that define when each rule is triggered, as well as each "target" that specifies which Lambda function is called and the parameters (as JSON) to pass into the function.  Notice that the "input" for "start_environment_rule_target" includes the "ssh_key_name" variable--so that the nodes of the Docker Swarm cluster will allow for SSH access only by the specified key.
 
+After creating the rules, we need to authorize them to call the Lambda functions:
+```
+resource "aws_lambda_permission" "allow_cloudwatch_start_env" {
+  statement_id   = "AllowExecutionFromCloudWatch"
+  action         = "lambda:InvokeFunction"
+  function_name  = "${aws_lambda_function.start_environment_lambda.function_name}"
+  principal      = "events.amazonaws.com"
+  source_arn     = "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:rule/StartEnvironmentRule"
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch_stop_env" {
+  statement_id   = "AllowExecutionFromCloudWatch"
+  action         = "lambda:InvokeFunction"
+  function_name  = "${aws_lambda_function.stop_environment_lambda.function_name}"
+  principal      = "events.amazonaws.com"
+  source_arn     = "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:rule/StopEnvironmentRule"
+}
+```
+
+The creation of these (above) permissions is done for you automatically when you're using the AWS console, but with
+Terraform it needs to be done explicitly. The aws_lambda_permission resource also has an optional qualifier attribute
+(though I'm not using here) which allows you to specify a particular version of the Lambda function.
+
 The last task is to set-up email notification so that someone will be notified whenever the CF stack creation
 or deletion is unsuccessful. The process for doing this is somewhat tedious with the current version of CloudFormation,
 but AWS has [documented it here](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-rollback-email/).
@@ -254,6 +289,6 @@ then run "terraform apply".
 
 ## Conclusion
 Although there are a number of components involved (i.e., IAM, CloudWatch, Lambda, CloudFormation), the solution for
-automating the testing of a CloudFormation Stack is fairly straight-forward. With the help of an additional Terraform
-(or CloudFormation) template, it becomes so easy to set-up that there's little reason not to.
+automating the testing of a CloudFormation Stack is fairly simple. And, with the help of the presented Terraform
+template, it becomes so easy to set-up that there's little reason not to.
 In the spirit of continuous testing and cost savings, enjoy!

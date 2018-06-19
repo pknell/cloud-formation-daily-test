@@ -2,6 +2,10 @@ provider "aws" {
   region = "us-west-2"
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
 variable "ssh_key_name" {
   type = "string"
 }
@@ -85,3 +89,20 @@ resource "aws_cloudwatch_event_target" "stop_environment_rule_target" {
 { "stackName": "MyStack" }
 EOF
 }
+
+resource "aws_lambda_permission" "allow_cloudwatch_start_env" {
+  statement_id   = "AllowExecutionFromCloudWatch"
+  action         = "lambda:InvokeFunction"
+  function_name  = "${aws_lambda_function.start_environment_lambda.function_name}"
+  principal      = "events.amazonaws.com"
+  source_arn     = "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:rule/StartEnvironmentRule"
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch_stop_env" {
+  statement_id   = "AllowExecutionFromCloudWatch"
+  action         = "lambda:InvokeFunction"
+  function_name  = "${aws_lambda_function.stop_environment_lambda.function_name}"
+  principal      = "events.amazonaws.com"
+  source_arn     = "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:rule/StopEnvironmentRule"
+}
+
