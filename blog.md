@@ -42,6 +42,21 @@ welcome you to AWS, and then [log-in to the console](https://console.aws.amazon.
 "N. Virginia" region is selected in the upper-right drop-down menu, because this blog's example uses "region = us-east-1"
 (which is N. Virginia) at the start of the Terraform template.
 
+## Install Terraform
+You'll need Terraform installed and added to your path. Refer to the [Terraform installation documentation](https://www.terraform.io/intro/getting-started/install.html).
+
+You'll also need to give Terraform access to your AWS account, by following these steps:
+1. Create an Access Key and Secret Access Key, refer to [https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/)
+1. Pass the access key and secret access key into Terraform, refer to [https://terraform.io/docs/providers/aws/index.html](https://terraform.io/docs/providers/aws/index.html)
+
+For step 2, I used the "Shared Credentials File" approach by merely creating a ".aws/credentials" file in my user's home
+directory with the following content:
+```
+[default]
+aws_access_key_id=YOUR-ACCESS-KEY
+aws_secret_access_key=YOUR-SECRET-ACCESS-KEY
+```
+
 ## Run Terraform
 
 You will need an SSH Key Pair in EC2 because it is required by the "Docker for AWS" CF template, so
@@ -50,16 +65,19 @@ next step.
 
 Download the Terraform template and its dependencies from my
 public GitHub repository: [https://github.com/pknell/cloud-formation-daily-test](https://github.com/pknell/cloud-formation-daily-test).
-An easy way to get all the files is to [download the zip](https://github.com/pknell/cloud-formation-daily-test/archive/master.zip)
-and extract it into a new directory.
+An easy way to get all the files is to [download and extract the zip](https://github.com/pknell/cloud-formation-daily-test/archive/master.zip).
 
-Then, open a shell into that directory, and run "terraform apply". You will be prompted to enter the name of your
-SSH Key Pair.
+Then, open a shell into the extracted directory, and run "terraform init". This will download and install the AWS plugin
+ for Terraform.
+ 
+Next, run "terraform apply". You will be prompted to enter the name of your SSH Key Pair, to confirm that you want to
+continue, and then Terraform will create all of the template's resources. The next section of this blog explains each
+resource.
 
-This command will create a terraform.tfstate file in the current directory. This file is used by Terraform to remember
-the identifiers of created resources.
+The "terraform apply" command also creates a terraform.tfstate file in the current directory. This file is used by Terraform to remember
+the identifiers of created resources, so that the can be updated or removed.
 
-You can now login to the AWS console to view the resources that Terraform created:
+You can now use the AWS console to view the resources that Terraform created:
 1. Go to CloudWatch, then Rules (under the Events sub-menu), and you'll see both the Start and Stop rules.
 1. Go to Lambda, and you'll see both the Start and Stop Lambda functions.
 1. At 9:30 AM CDT (or 14:30 UTC) the next day, you can go to CloudFormation to view the stack. Then, 30 minutes later,
