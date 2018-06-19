@@ -82,6 +82,12 @@ You can now use the AWS console to view the resources that Terraform created:
 1. Go to Lambda, and you'll see both the Start and Stop Lambda functions.
 1. At 9:30 AM CDT (or 14:30 UTC) the next day, you can go to CloudFormation to view the stack. Then, 30 minutes later,
 you can view the stack being deleted.
+1. If you do not want to wait until 9:30 AM, you can adjust the cron expressions and run "terraform apply" again to
+deploy the change. You can find information on the cron format in the [CloudWatch Scheduled Events documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#CronExpressions).
+1. After the Lambda function(s) have executed, you can go to [Logs in the CloudWatch console](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logs:)
+to view logs created by Lambda.
+1. While the CloudFormation stack is up, you can use your SSH key to connect an SSH client to the running EC2 instances
+that are part of the [Docker Swarm](https://docs.docker.com/engine/swarm/key-concepts/).
 
 ## Terraform Walk-Through
 The Terraform template file is called [start-stop-environment.tf](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment.tf).
