@@ -10,35 +10,50 @@ only needed during daytime hours, or sometimes only during certain project phase
 periodically (such as each weekday), you'll have confidence that they work and are being properly maintained.
 Furthermore, if you have a test environment that only needs to run during the day, and not at night (for cost savings),
 you can test your template each morning and test the tear-down each night. But how can you automate this?
-Answer: Lambda + CloudWatch Scheduled Events.
+Answer: Lambda + CloudWatch Rules.
 
 This blog works through setting up this kind of daily test.
 For the sake of an example, we are using the [Docker for AWS Community Edition](https://docs.docker.com/docker-for-aws/#quickstart)
 as the CF template that's being tested, but the idea is that you would use your own 
-project's template instead. We're also using a Terraform template in order to set up the test and give it an
-automated daily schedule. However, instead of Terraform, you could accomplish the same result using CloudFormation or manually using
-the AWS console.
+project's template instead. We're also using a [Terraform template](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment.tf)
+in order to set up the test and give it an
+automated daily schedule. However, instead of Terraform, you could accomplish the same result using CloudFormation
+or manually using the AWS console.
 The image below depicts the entire setup, and we'll walk through how to run and understand the Terraform template
 that sets everything up.
 All you will need is an AWS account and a local installation of Terraform. 
 
 ![Overview Diagram](https://github.com/pknell/cloud-formation-daily-test/blob/master/diagram.png)
 
-CloudWatch Rules are used to trigger Lambda functions. You can tweak the rules' cron expression to adjust
-the start/stop times (e.g., you could adjust them to match your workday and then use the environment
-during the day for additional testing). The Lambda functions will, respectively, create and delete the CF
+CloudWatch Rules are used to trigger Lambda functions based on cron expressions, which you can tweak to adjust
+the start/stop times. The Lambda functions will, respectively, create and delete the CF
 stack. Yes--it's really that simple.
+
+## Create an AWS Account
+
+You can skip this section if you already have an account. To create an account, go to https://aws.amazon.com and
+select "Create AWS Account" at the upper-right corner of the window (alternatively, click the "Sign In" button and then 
+"Create a New Account"). Enter your email address, password, and password confirmation. On the next couple screens, you'll enter
+your address, phone number, and credit card information. Upon completion for the form, you'll receive a 4-digit code,
+and then an automated phone call where you'll be prompted to enter the code to activate your account. There is a
+12-month "Free Tier" that this blog's example stays within, but if you incur any charges they'll be posted to your card.
+I had only $0.02 charged to my card while developing/testing this example. Check your email for messages that
+welcome you to AWS, and then [log-in to the console](https://console.aws.amazon.com). Once logged-in, check that the
+"N. Virginia" region is selected in the upper-right drop-down menu, because this blog's example uses "region = us-east-1"
+(which is N. Virginia) at the start of the Terraform template.
 
 ## Run Terraform
 
 You will need an SSH Key Pair in EC2 because it is required by the "Docker for AWS" CF template, so
-it needs to pre-exist. If you do not have one, create it using the EC2 console and remember its name for the
+it needs to pre-exist. If you do not have one, [create it using the EC2 console](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair) and remember its name for the
 next step.
 
-To create all the above in your AWS account, fetch the Terraform template and its dependencies from my
-public GitHub repository: https://github.com/pknell/cloud-formation-daily-test
+Download the Terraform template and its dependencies from my
+public GitHub repository: [https://github.com/pknell/cloud-formation-daily-test](https://github.com/pknell/cloud-formation-daily-test).
+An easy way to get all the files is to [download the zip](https://github.com/pknell/cloud-formation-daily-test/archive/master.zip)
+and extract it into a new directory.
 
-Open a shell into that directory, and run "terraform apply". You will be prompted to enter the name of your
+Then, open a shell into that directory, and run "terraform apply". You will be prompted to enter the name of your
 SSH Key Pair.
 
 This command will create a terraform.tfstate file in the current directory. This file is used by Terraform to remember
