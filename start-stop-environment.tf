@@ -40,15 +40,27 @@ resource "aws_iam_policy_attachment" "manage_environment_iam_policy_attachment" 
     roles = ["${aws_iam_role.manage_environment_iam_role.name}"]
 }
 
+data "archive_file" "start_environment_lambda_zip" {
+    type        = "zip"
+    source_dir  = "start_env_lambda"
+    output_path = "start_env_lambda/start_environment_lambda_payload.zip"
+}
+
 resource "aws_lambda_function" "start_environment_lambda" {
   filename         = "start_env_lambda/start_environment_lambda_payload.zip"
   function_name    = "StartEnvironment"
   role             = "${aws_iam_role.manage_environment_iam_role.arn}"
   handler          = "index.handler"
-  source_code_hash = "${base64sha256(file("start_env_lambda/start_environment_lambda_payload.zip"))}"
+  source_code_hash = "${data.archive_file.start_environment_lambda_zip.output_base64sha256}"
   runtime          = "nodejs8.10"
   memory_size      = 128
   timeout          = 15
+}
+
+data "archive_file" "stop_environment_lambda_zip" {
+    type        = "zip"
+    source_dir  = "stop_env_lambda"
+    output_path = "stop_env_lambda/stop_environment_lambda_payload.zip"
 }
 
 resource "aws_lambda_function" "stop_environment_lambda" {
@@ -56,7 +68,7 @@ resource "aws_lambda_function" "stop_environment_lambda" {
   function_name    = "StopEnvironment"
   role             = "${aws_iam_role.manage_environment_iam_role.arn}"
   handler          = "index.handler"
-  source_code_hash = "${base64sha256(file("stop_env_lambda/stop_environment_lambda_payload.zip"))}"
+  source_code_hash = "${data.archive_file.stop_environment_lambda_zip.output_base64sha256}"
   runtime          = "nodejs8.10"
   memory_size      = 128
   timeout          = 15
