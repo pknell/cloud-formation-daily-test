@@ -43,11 +43,11 @@ resource "aws_iam_policy_attachment" "manage_environment_iam_policy_attachment" 
 data "archive_file" "start_environment_lambda_zip" {
     type        = "zip"
     source_dir  = "start_env_lambda"
-    output_path = "start_env_lambda/start_environment_lambda_payload.zip"
+    output_path = "lambda-packages/start_environment_lambda_payload.zip"
 }
 
 resource "aws_lambda_function" "start_environment_lambda" {
-  filename         = "start_env_lambda/start_environment_lambda_payload.zip"
+  filename         = "lambda-packages/start_environment_lambda_payload.zip"
   function_name    = "StartEnvironment"
   role             = "${aws_iam_role.manage_environment_iam_role.arn}"
   handler          = "index.handler"
@@ -60,11 +60,11 @@ resource "aws_lambda_function" "start_environment_lambda" {
 data "archive_file" "stop_environment_lambda_zip" {
     type        = "zip"
     source_dir  = "stop_env_lambda"
-    output_path = "stop_env_lambda/stop_environment_lambda_payload.zip"
+    output_path = "lambda-packages/stop_environment_lambda_payload.zip"
 }
 
 resource "aws_lambda_function" "stop_environment_lambda" {
-  filename         = "stop_env_lambda/stop_environment_lambda_payload.zip"
+  filename         = "lambda-packages/stop_environment_lambda_payload.zip"
   function_name    = "StopEnvironment"
   role             = "${aws_iam_role.manage_environment_iam_role.arn}"
   handler          = "index.handler"

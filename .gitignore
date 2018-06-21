@@ -7,3 +7,6 @@
 
 # .tfvars files
 *.tfvars
+
+# Exclude the .zip files that the Terraform archive_file generates:
+lambda-packages/*.zip

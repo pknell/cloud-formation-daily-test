@@ -160,11 +160,11 @@ With the IAM role available, we can move on to creation of the Lambda functions:
 data "archive_file" "start_environment_lambda_zip" {
     type        = "zip"
     source_dir  = "start_env_lambda"
-    output_path = "start_env_lambda/start_environment_lambda_payload.zip"
+    output_path = "lambda-packages/start_environment_lambda_payload.zip"
 }
 
 resource "aws_lambda_function" "start_environment_lambda" {
-  filename         = "start_env_lambda/start_environment_lambda_payload.zip"
+  filename         = "lambda-packages/start_environment_lambda_payload.zip"
   function_name    = "StartEnvironment"
   role             = "${aws_iam_role.manage_environment_iam_role.arn}"
   handler          = "index.handler"
@@ -177,11 +177,11 @@ resource "aws_lambda_function" "start_environment_lambda" {
 data "archive_file" "stop_environment_lambda_zip" {
     type        = "zip"
     source_dir  = "stop_env_lambda"
-    output_path = "stop_env_lambda/stop_environment_lambda_payload.zip"
+    output_path = "lambda-packages/stop_environment_lambda_payload.zip"
 }
 
 resource "aws_lambda_function" "stop_environment_lambda" {
-  filename         = "stop_env_lambda/stop_environment_lambda_payload.zip"
+  filename         = "lambda-packages/stop_environment_lambda_payload.zip"
   function_name    = "StopEnvironment"
   role             = "${aws_iam_role.manage_environment_iam_role.arn}"
   handler          = "index.handler"
@@ -194,7 +194,8 @@ resource "aws_lambda_function" "stop_environment_lambda" {
 
 Here we create each Lambda function by referencing both the IAM role as well as the Lambda function's code. The
 file format for the code varies depending on the language. For this example, since I used NodeJS, the format is a zip
-file that contains at least one ".js" file.  The Lambda service will extract the contents of the zip and run the
+file that contains at least one ".js" file. The "archive_file" data sources are used to create the zip file when
+Terraform executes. The Lambda service will extract the contents of the zip and run the
 JavaScript function identified by the handler "index.handler". The name of the handler is really the base name of the
 file "index.js", followed by a dot, followed by the name of the exported JavaScript function. Here's the contents
 of the index.js of the "start_environment_lambda_payload.zip":
