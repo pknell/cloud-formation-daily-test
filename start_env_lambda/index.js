@@ -3,6 +3,9 @@ exports.handler = function(event, context, callback) {
    var AWS = require('aws-sdk');
    var cloudformation = new AWS.CloudFormation();
 
+   var account_id = context.invokedFunctionArn.split(":")[4]
+   var region = process.env.AWS_DEFAULT_REGION
+
    var params = {
      StackName: event.stackName, /* required */
      Capabilities: [
@@ -31,7 +34,8 @@ exports.handler = function(event, context, callback) {
        }
      ],
      TemplateURL: 'https://editions-us-east-1.s3.amazonaws.com/aws/stable/Docker.tmpl',
-     TimeoutInMinutes: 20
+     TimeoutInMinutes: 20,
+     NotificationARNs: [ 'arn:aws:sns:' + region + ':' + account_id + ':cloudformation-events' ]
    };
    cloudformation.createStack(params, function(err, data) {
      if (err) {
