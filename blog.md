@@ -75,7 +75,7 @@ continue, and then Terraform will create all of the template's resources. The ne
 resource.
 
 The "terraform apply" command also creates a terraform.tfstate file in the current directory. This file is used by Terraform to remember
-the identifiers of created resources, so that the can be updated or removed.
+the identifiers of created resources, so they can be updated or removed.
 
 You can now use the AWS console to view the resources that Terraform created:
 1. Go to CloudWatch, then Rules (under the Events sub-menu), and you'll see both the Start and Stop rules.
