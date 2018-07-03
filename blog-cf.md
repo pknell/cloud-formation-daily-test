@@ -52,7 +52,7 @@ Click "Next" and then enter a stack name and the name of your SSH key pair.
 
 ![Stack Details](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/stack-details.png)
 
-Click "Next", then "Create". Enable the checkbox for IAM resource capabilities.
+Click "Next", then "Next" again (to use the default options), and then "Create". Enable the checkbox for IAM resource capabilities.
 
 ![IAM Acknowledge](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/iam-acknowledge.png)
 
@@ -66,15 +66,15 @@ You can now use the AWS console to view the created resources:
 1. At 9:30 AM CDT (or 14:30 UTC) the next day, you can go to CloudFormation to view the stack. Then, 30 minutes later,
 you can view the stack being deleted. You can tweak the cron expressions of the rules to adjust these times.
 You can find information on the cron format in the [CloudWatch Scheduled Events documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#CronExpressions).
-1. After the Lambda function(s) have executed, you can go to [Logs in the CloudWatch console](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logs:)
+1. After the Lambda function(s) have executed, you can go to [Logs in the CloudWatch console](https://console.aws.amazon.com/cloudwatch/home#logs:)
 to view logs created by Lambda.
 1. Since this example runs the Docker template: While the CloudFormation stack is up, you can use your SSH key to connect
 an SSH client to the running EC2 instances that are part of the [Docker Swarm](https://docs.docker.com/engine/swarm/key-concepts/).
 
 ## Template Walk-Through
 The template file ([start-stop-environment-cf.yaml](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment-cf.yaml))
-start with a "Metadata" section. This section is used by the [CloudFormation Designer tool](http://console.aws.amazon.com/cloudformation/designer),
-to store diagram coordinates. You can open the file in the Designer to view the diagram:
+starts with a "Metadata" section. This section is used by the [CloudFormation Designer tool](http://console.aws.amazon.com/cloudformation/designer),
+to store diagram coordinates. If you open the template file in the Designer, you can view it graphically:
 
 ![Template Design Diagram](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/template-design.png)
 
@@ -130,9 +130,9 @@ create and delete the CF stack:
 ```
 
 The policy I'm using includes all the permissions needed for the Docker CF template but
-intentionally excludes items such as Billing, KMS, and deletion of CloudTrail logs. If you're using your project's
-CF template, instead of the one used in this example, you'll need to create a policy 
-(or customize this one) to meet the needs of your application stack and organization's requirements.
+intentionally excludes items such as Billing, KMS, and deletion of CloudTrail logs. If you're testing your project's
+CF template, you'll need to create a policy (or customize this one) to meet the needs of your application stack and 
+organization's requirements.
 
 After IAM, the next resources are the Lambda functions:
 ```
@@ -313,14 +313,14 @@ After creating the rules, we need to authorize them to call the Lambda functions
         - Arn
 ```
 
-The creation of these Lambda permissions is done for you automatically when you're using the AWS console, but with
-CloudFormation it needs to be done explicitly. The FunctionName can be the ARN of a [specific version of the Lambda
-function](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-version.html).
+The creation of these Lambda permissions is done for you automatically when you're using the AWS console to create the
+rules, but with CloudFormation it needs to be done explicitly. The FunctionName can be the ARN of a specific [version](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-version.html)
+or [alias](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-alias.html) of the Lambda function.
 
 The last task is to set-up email (or SMS) notification so that someone will be notified whenever the CF stack creation
 or deletion is unsuccessful. The process for doing this is somewhat tedious,
 but AWS has [documented it here](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-rollback-email/).
-I've worked through this using Terraform, so you can refer to [the "error-notify-using-sms" branch](https://github.com/pknell/cloud-formation-daily-test/tree/error-notify-using-sms)
+I've worked through these steps using Terraform, so you can refer to [the "error-notify-using-sms" branch](https://github.com/pknell/cloud-formation-daily-test/tree/error-notify-using-sms)
 of my GitHub project (see [error-notification.tf](https://github.com/pknell/cloud-formation-daily-test/blob/error-notify-using-sms/error-notification.tf),
 and the NotificationARNs added to [start_env_lambda](https://github.com/pknell/cloud-formation-daily-test/blob/error-notify-using-sms/start_env_lambda/index.js)).
 
