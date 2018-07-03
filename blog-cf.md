@@ -46,23 +46,23 @@ next step.
 Log into the [AWS Console](https://console.aws.amazon.com), and select "CloudFormation" from the Services menu. Select
 "Create a new stack". For the template selection, download the [template file](https://raw.githubusercontent.com/pknell/cloud-formation-daily-test/master/start-stop-environment-cf.yaml) and then upload it using "Upload a template to Amazon S3"
 
-<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/upload-template.png" style="border-style: solid; border-width: 1px" />
+![Upload Template](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/upload-template.png)
 
 Click "Next" and then enter a stack name and the name of your SSH key pair.
 
-<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/stack-details.png style="border-style: solid; border-width: 1px" />
+![Stack Details](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/stack-details.png)
 
 Click "Next", then "Create". Enable the checkbox for IAM resource capabilities.
 
-<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/iam-acknowledge.png style="border-style: solid; border-width: 1px" />
+![IAM Acknowledge](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/iam-acknowledge.png)
 
 Wait until the status changes to "Create Complete".
  
 You can now use the AWS console to view the created resources:
 1. Go to CloudWatch, then Rules (under the Events sub-menu), and you'll see both the Start and Stop rules.
-<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/rules.png style="border-style: solid; border-width: 1px" />
+![Rules](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/rules.png)
 1. Go to Lambda, and you'll see both the Start and Stop Lambda functions.
-<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/lambda.png style="border-style: solid; border-width: 1px" />
+![Lambda](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/lambda.png)
 1. At 9:30 AM CDT (or 14:30 UTC) the next day, you can go to CloudFormation to view the stack. Then, 30 minutes later,
 you can view the stack being deleted. You can tweak the cron expressions of the rules to adjust these times.
 You can find information on the cron format in the [CloudWatch Scheduled Events documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#CronExpressions).
@@ -76,7 +76,7 @@ The template file ([start-stop-environment-cf.yaml](https://github.com/pknell/cl
 start with a "Metadata" section. This section is used by the [CloudFormation Designer tool](http://console.aws.amazon.com/cloudformation/designer),
 to store diagram coordinates. You can open the file in the Designer to view the diagram:
 
-<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/template-design.png style="border-style: solid; border-width: 1px" />
+![Template Design Diagram](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/template-design.png)
 
 The next section is "Parameters". This section is for any user input; in this example, it's just the name of the SSH key.
 ```
@@ -327,7 +327,7 @@ and the NotificationARNs added to [start_env_lambda](https://github.com/pknell/c
 ## Clean-up
 When you're done, you can remove the stack via the CloudFormation console:
 
-<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/delete-stack.png style="border-style: solid; border-width: 1px" />
+![Delete Stack](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/delete-stack.png)
 
 If the environment is started and not stopped (e.i., the stack called "MyStack" exists), then remove that stack as well.
 
