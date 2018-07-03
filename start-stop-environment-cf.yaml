@@ -1,0 +1,317 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  'AWS::CloudFormation::Designer':
+    42b391b8-8760-4e05-86e6-b2603aa9e203:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 80
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - 2d605179-bffb-473b-a272-092cc16c474c
+    2d605179-bffb-473b-a272-092cc16c474c:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -72.5
+        'y': 77.5
+      z: 0
+      embeds: []
+    86669b58-9605-4dcf-9e41-4b8f2293aedf:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -120
+        'y': 170
+      z: 0
+      embeds: []
+    3260e887-1314-461c-951b-758fcc6b42dd:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 90
+        'y': 170
+      z: 0
+      embeds: []
+    0d95330d-54f4-4e82-8dbd-c876a633acc8:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -40
+        'y': 170
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - 86669b58-9605-4dcf-9e41-4b8f2293aedf
+    8650c417-22c8-48a9-a520-1ba12e31f41f:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -120
+        'y': 280
+      z: 0
+      embeds: []
+    7fcdae94-571e-4802-a9f8-197eca66b085:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 90
+        'y': 280
+      z: 0
+      embeds: []
+    1660e06c-bfa8-4a8f-b7cf-70ab5df022fc:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 170
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - 86669b58-9605-4dcf-9e41-4b8f2293aedf
+        - 3260e887-1314-461c-951b-758fcc6b42dd
+Parameters:
+  SshKeyNameParameter:
+    Type: String
+    Default: Your-SSH-Key-Name
+    Description: The EC2 keypair name for instance SSH access.
+Resources:
+  ManageEnvironmentIamPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: ManageEnvPolicy
+      Roles:
+        - Ref: ManageEnvRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:DeleteLogGroup'
+              - 'logs:DeleteLogStream'
+              - 'logs:DescribeLogGroups'
+              - 'logs:GetLogEvents'
+              - 'logs:PutLogEvents'
+              - 'logs:PutRetentionPolicy'
+            Resource: 'arn:aws:logs:*:*:*'
+          - Effect: Allow
+            Action:
+              - 'iam:AddRoleToInstanceProfile'
+              - 'iam:CreateInstanceProfile'
+              - 'iam:CreateRole'
+              - 'iam:DeleteInstanceProfile'
+              - 'iam:DeleteRole'
+              - 'iam:DeleteRolePolicy'
+              - 'iam:GetRole'
+              - 'iam:PassRole'
+              - 'iam:PutRolePolicy'
+              - 'iam:RemoveRoleFromInstanceProfile'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'cloudformation:*'
+              - 'ec2:*'
+              - 'rds:*'
+              - 'autoscaling:*'
+              - 'elasticloadbalancing:*'
+              - 'elasticfilesystem:*'
+              - 'elasticloadbalancing:*'
+              - 'lambda:*'
+              - 'dynamodb:*'
+              - 'sqs:*'
+            Resource: '*'
+          - Effect: Deny
+            Action: 'aws-portal:*Billing'
+            Resource: '*'
+          - Effect: Deny
+            Action:
+              - 'cloudtrail:DeleteTrail'
+              - 'cloudtrail:StopLogging'
+              - 'cloudtrail:UpdateTrail'
+            Resource: '*'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 42b391b8-8760-4e05-86e6-b2603aa9e203
+  ManageEnvRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: ManageEnvRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Effect: Allow
+            Sid: ''
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 2d605179-bffb-473b-a272-092cc16c474c
+  StartEnvironment:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: StartEnvironment
+      Handler: index.handler
+      MemorySize: 128
+      Timeout: 15
+      Role:
+        'Fn::GetAtt':
+          - ManageEnvRole
+          - Arn
+      Runtime: nodejs6.10
+      Code:
+        ZipFile: |
+          exports.handler = function(event, context, callback) {
+
+             var AWS = require('aws-sdk');
+             var cloudformation = new AWS.CloudFormation();
+
+             var params = {
+               StackName: event.stackName, /* required */
+               Capabilities: [
+                 'CAPABILITY_IAM'
+               ],
+               EnableTerminationProtection: false,
+               OnFailure: 'ROLLBACK', // DO_NOTHING | ROLLBACK | DELETE,
+               Parameters: [
+                 {
+                   ParameterKey: 'KeyName',
+                   ParameterValue: event.keyPairName
+                 },
+                 {
+                     ParameterKey: 'ManagerSize',
+                     ParameterValue: event.managerSize || '1'
+                 },
+                 {
+                     ParameterKey: 'ClusterSize',
+                     ParameterValue: event.clusterSize || '1'
+                 }
+               ],
+               Tags: [
+                 {
+                   Key: 'CloudFormationStack',
+                   Value: event.stackName
+                 }
+               ],
+               TemplateURL: 'https://editions-us-east-1.s3.amazonaws.com/aws/stable/Docker.tmpl',
+               TimeoutInMinutes: 20
+             };
+             cloudformation.createStack(params, function(err, data) {
+               if (err) {
+                  callback("Error creating the Stack: "+err); 
+               }
+               else {
+                  callback(null, "Success creating the Stack.");
+               }
+             });
+          }
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 86669b58-9605-4dcf-9e41-4b8f2293aedf
+  StopEnvironment:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: index.handler
+      MemorySize: 128
+      Timeout: 15
+      Role:
+        'Fn::GetAtt':
+          - ManageEnvRole
+          - Arn
+      Runtime: nodejs6.10
+      Code:
+        ZipFile: |
+          exports.handler = function(event, context, callback) {
+
+             var AWS = require('aws-sdk');
+             var cloudformation = new AWS.CloudFormation();
+
+              var params = {
+                StackName: event.stackName /* required */
+              };
+             cloudformation.deleteStack(params, function(err, data) {
+               if (err) {
+                  callback("Error deleting the Stack: "+err); 
+               }
+               else {
+                  callback(null, "Success deleting the Stack.");
+               }
+             });
+          }
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 3260e887-1314-461c-951b-758fcc6b42dd
+  AllowCloudwatchStartEnv:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt 
+        - StartEnvironment
+        - Arn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt 
+        - StartRule
+        - Arn
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 0d95330d-54f4-4e82-8dbd-c876a633acc8
+  StartRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Name: StartEnvironmentRule
+      ScheduleExpression: cron(30 14 ? * 2-6 *)
+      Targets:
+        - Arn: !GetAtt 
+            - StartEnvironment
+            - Arn
+          Id: start_environment_rule_target
+          Input: !Join
+            - ''
+            - -  '{ "stackName": "MyStack", "keyPairName": "'
+              - Ref: SshKeyNameParameter
+              - '" }'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 8650c417-22c8-48a9-a520-1ba12e31f41f
+  StopRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Name: StopEnvironmentRule
+      ScheduleExpression: cron(0 15 ? * 2-6 *)
+      Targets:
+        - Arn: !GetAtt 
+            - StopEnvironment
+            - Arn
+          Id: stop_environment_rule_target
+          Input: '{ "stackName": "MyStack" }'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 7fcdae94-571e-4802-a9f8-197eca66b085
+  AllowCloudwatchStopEnv:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt 
+        - StopEnvironment
+        - Arn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt 
+        - StopRule
+        - Arn
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 1660e06c-bfa8-4a8f-b7cf-70ab5df022fc
+
