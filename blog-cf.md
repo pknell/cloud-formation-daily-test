@@ -8,13 +8,14 @@ resources in your cloud environment using template files, thereby allowing
 you to easily create additional similar environments for purposes such as development, testing, and 
 quality assurance. These test environments are not necessarily always needed--sometimes they're
 only needed during daytime hours, or sometimes only during certain project phases. Using the template files to remove/restore
- your environment is not the only way to cut nightly costs--there's also scheduled auto-scaling groups, and an [instance scheduler tool](https://aws.amazon.com/answers/infrastructure-management/instance-scheduler/).
+ your environment is not the only way to cut nightly costs--there's also [scheduled autoscaling groups](https://docs.aws.amazon.com/autoscaling/ec2/userguide/schedule_time.html), and an [instance scheduler tool](https://aws.amazon.com/answers/infrastructure-management/instance-scheduler/).
  However, maintaining the templates is unquestionably useful for testing infrastructure changes without much risk of impacting your other environments.
-How will you know that the template your wrote and used today will still work when you may only need it months from now? A simple daily test should give you that confidence and notify you if anything breaks.
+How will you know that the template you wrote and used today will still work when you need it again months from now?
+A simple daily test should give you that confidence and notify you if anything breaks.
  So, how can we set up daily CF stack creation and removal? Answer: Lambda + CloudWatch Rules. This blog works through 
  understanding a template that sets up this kind of daily test.
 
-For the sake of an example CF stack, we are using the [Docker for AWS Community Edition](https://docs.docker.com/docker-for-aws/#quickstart)
+For the sake of having an example CF stack, we are using the [Docker for AWS Community Edition](https://docs.docker.com/docker-for-aws/#quickstart)
 as the CF template that's being tested, but the idea is that you would use your own project's template instead.
 
 The image below depicts the entire setup, and we'll walk through how to run and understand the template
@@ -25,7 +26,7 @@ that sets everything up. All you will need is an AWS account.
 The test works as follows: CloudWatch Rules are used to trigger Lambda functions based on cron expressions, which you 
 can tweak to adjust the start/stop times. The Lambda functions will, respectively, create and delete the CF stack.
 
-You can set up this test in your own AWS account by using [this CF template](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment-cf.json).
+You can set up this test in your own AWS account by using [this CF template](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment-cf.yaml).
 The remainder of this blog (after account creation) works through understanding this template.  If, instead, you'd like to learn
 a little Terraform, here's an equivalent [Terraform template](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment.tf)
 
@@ -33,8 +34,8 @@ a little Terraform, here's an equivalent [Terraform template](https://github.com
 ## Create an AWS Account
 
 *Skip this step if you already have an account.* Go to https://aws.amazon.com and
-select "Create AWS Account" at the upper-right corner (alternatively, click the "Sign In" button and then 
-"Create a New Account"). You then work through entering your information, legal agreements, and identity verification.
+select "Create AWS Account" at the upper-right corner (alternatively, click the "Sign In to the Console" button and then 
+"Create a new AWS account"). You then work through entering your information, legal agreements, and identity verification.
 
 ## Create the CF Stack
 
@@ -43,24 +44,25 @@ using. If you do not have one, [create it using the EC2 console](https://docs.aw
 next step.
 
 Log into the [AWS Console](https://console.aws.amazon.com), and select "CloudFormation" from the Services menu. Select
-"Create a new stack". For the template selection, download the [template file](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment-cf.yaml) and then upload it using "Upload a template to Amazon S3"
-![Upload Template](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/upload-template.png)
+"Create a new stack". For the template selection, download the [template file](https://raw.githubusercontent.com/pknell/cloud-formation-daily-test/master/start-stop-environment-cf.yaml) and then upload it using "Upload a template to Amazon S3"
+
+<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/upload-template.png" style="border-style: solid; border-width: 1px" />
 
 Click "Next" and then enter a stack name and the name of your SSH key pair.
 
-![Stack Details](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/stack-details.png)
+<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/stack-details.png style="border-style: solid; border-width: 1px" />
 
 Click "Next", then "Create". Enable the checkbox for IAM resource capabilities.
 
-![IAM Acknowledge](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/iam-acknowledge.png)
+<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/iam-acknowledge.png style="border-style: solid; border-width: 1px" />
 
 Wait until the status changes to "Create Complete".
  
 You can now use the AWS console to view the created resources:
 1. Go to CloudWatch, then Rules (under the Events sub-menu), and you'll see both the Start and Stop rules.
-![Rules](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/rules.png)
+<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/rules.png style="border-style: solid; border-width: 1px" />
 1. Go to Lambda, and you'll see both the Start and Stop Lambda functions.
-![Lambda](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/lambda.png)
+<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/lambda.png style="border-style: solid; border-width: 1px" />
 1. At 9:30 AM CDT (or 14:30 UTC) the next day, you can go to CloudFormation to view the stack. Then, 30 minutes later,
 you can view the stack being deleted. You can tweak the cron expressions of the rules to adjust these times.
 You can find information on the cron format in the [CloudWatch Scheduled Events documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#CronExpressions).
@@ -74,7 +76,7 @@ The template file ([start-stop-environment-cf.yaml](https://github.com/pknell/cl
 start with a "Metadata" section. This section is used by the [CloudFormation Designer tool](http://console.aws.amazon.com/cloudformation/designer),
 to store diagram coordinates. You can open the file in the Designer to view the diagram:
 
-![Template Design Diagram](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/template-design.png)
+<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/template-design.png style="border-style: solid; border-width: 1px" />
 
 The next section is "Parameters". This section is for any user input; in this example, it's just the name of the SSH key.
 ```
@@ -325,7 +327,7 @@ and the NotificationARNs added to [start_env_lambda](https://github.com/pknell/c
 ## Clean-up
 When you're done, you can remove the stack via the CloudFormation console:
 
-![Delete Stack](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/delete-stack.png)
+<img src="https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/delete-stack.png style="border-style: solid; border-width: 1px" />
 
 If the environment is started and not stopped (e.i., the stack called "MyStack" exists), then remove that stack as well.
 
