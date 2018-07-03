@@ -1,4 +1,5 @@
-# AWS Infrastructure Automated Testing
+# AWS CloudFormation Daily Testing
+*By Paul Knell*
 
 When it comes to Amazon Web Services (AWS), most infrastructure scripting is done using either
 [CloudFormation (CF)](https://aws.amazon.com/cloudformation), which is an AWS service,
