@@ -163,7 +163,6 @@ Resources:
   StartEnvironment:
     Type: 'AWS::Lambda::Function'
     Properties:
-      FunctionName: StartEnvironment
       Handler: index.handler
       MemorySize: 128
       Timeout: 15
