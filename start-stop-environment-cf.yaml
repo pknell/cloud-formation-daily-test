@@ -80,11 +80,105 @@ Metadata:
       isassociatedwith:
         - 86669b58-9605-4dcf-9e41-4b8f2293aedf
         - 3260e887-1314-461c-951b-758fcc6b42dd
+    7212818f-6050-4dfc-a383-460e5e65949d:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 430
+        'y': 160
+      z: 0
+      embeds: []
+    e5abcef9-b31c-4c1a-998a-feb6567cf517:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 310
+        'y': 160
+      z: 0
+      embeds: []
+    66599f7f-2292-4d95-8e77-438db37d98cb:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 530
+        'y': 80
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - 2d605179-bffb-473b-a272-092cc16c474c
+    c978cfd2-e8af-4555-b72a-f9983674cd11:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 430
+        'y': 80
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - 2d605179-bffb-473b-a272-092cc16c474c
+        - 3a5300e6-13bd-4858-a6c1-45500f93df81
+    3a5300e6-13bd-4858-a6c1-45500f93df81:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 310
+        'y': 80
+      z: 0
+      embeds: []
+    aabb7af2-bb12-4d6c-a080-0be3cff42447:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 640
+        'y': 190
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - 391ff8e1-de39-4c3e-9fd2-708b74efb235
+    391ff8e1-de39-4c3e-9fd2-708b74efb235:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 540
+        'y': 190
+      z: 0
+      embeds: []
+    37a751e3-baf3-479d-b157-96a392b92f49:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 310
+        'y': 260
+      z: 0
+      embeds: []
+    915ea2ae-114e-4977-b91c-60ae49753450:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 430
+        'y': 260
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - 37a751e3-baf3-479d-b157-96a392b92f49
 Parameters:
   SshKeyNameParameter:
     Type: String
     Default: Your-SSH-Key-Name
     Description: The EC2 keypair name for instance SSH access.
+  SmsPhoneNumberParameter:
+    Type: String
+    Default: Your-SMS-Phone-Number
+    Description: The phone number to message when errors occur.
 Resources:
   ManageEnvironmentIamPolicy:
     Type: 'AWS::IAM::Policy'
@@ -176,6 +270,9 @@ Resources:
 
              var AWS = require('aws-sdk');
              var cloudformation = new AWS.CloudFormation();
+             
+             var account_id = context.invokedFunctionArn.split(":")[4]
+             var region = process.env.AWS_DEFAULT_REGION
 
              var params = {
                StackName: event.stackName, /* required */
@@ -205,7 +302,8 @@ Resources:
                  }
                ],
                TemplateURL: 'https://editions-us-east-1.s3.amazonaws.com/aws/stable/Docker.tmpl',
-               TimeoutInMinutes: 20
+               TimeoutInMinutes: 20,
+               NotificationARNs: [ 'arn:aws:sns:' + region + ':' + account_id + ':cloudformation-events' ]
              };
              cloudformation.createStack(params, function(err, data) {
                if (err) {
@@ -275,9 +373,9 @@ Resources:
             - StartEnvironment
             - Arn
           Id: start_environment_rule_target
-          Input: !Join
+          Input: !Join 
             - ''
-            - -  '{ "stackName": "MyStack", "keyPairName": "'
+            - - '{ "stackName": "MyStack", "keyPairName": "'
               - Ref: SshKeyNameParameter
               - '" }'
     Metadata:
@@ -311,4 +409,171 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 1660e06c-bfa8-4a8f-b7cf-70ab5df022fc
+  CloudFormationEventsTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: cloudformation-events
+      Subscription:
+        - Protocol: lambda
+          Endpoint: !GetAtt 
+            - ErrorNotifyLambda
+            - Arn
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 7212818f-6050-4dfc-a383-460e5e65949d
+  ErrorNotificationTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: error-notification
+      Subscription:
+        - Protocol: sms
+          Endpoint:
+            Ref: SmsPhoneNumberParameter
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e5abcef9-b31c-4c1a-998a-feb6567cf517
+  AllowLambdaPublishToSnsCloudformationEvents:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: AllowLambdaPublishToSnsCloudformationEvents
+      Roles:
+        - Ref: ManageEnvRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sns:Publish'
+              - 'lambda:InvokeFunction'
+            Resource: !Ref CloudFormationEventsTopic
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 66599f7f-2292-4d95-8e77-438db37d98cb
+  AllowLambdaPublishToSns:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: AllowLambdaPublishToSns
+      Roles:
+        - Ref: ErrorNotificationRole
+        - Ref: ManageEnvRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sns:Publish'
+            Resource: !Ref ErrorNotificationTopic
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource: 'arn:aws:logs:*:*:*'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: c978cfd2-e8af-4555-b72a-f9983674cd11
+  ErrorNotificationRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Principal:
+              Service: lambda.amazonaws.com
+            Effect: Allow
+            Sid: ''
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 3a5300e6-13bd-4858-a6c1-45500f93df81
+  AllowCloudwatchWrite:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: AllowCloudwatchWrite
+      Roles:
+        - Ref: SnsCloudwatchFeedbackRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource: 'arn:aws:logs:*:*:*'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: aabb7af2-bb12-4d6c-a080-0be3cff42447
+  SnsCloudwatchFeedbackRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Principal:
+              Service: sns.amazonaws.com
+            Effect: Allow
+            Sid: ''
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 391ff8e1-de39-4c3e-9fd2-708b74efb235
+  ErrorNotifyLambda:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: index.handler
+      MemorySize: 128
+      Timeout: 15
+      Role:
+        'Fn::GetAtt':
+          - ErrorNotificationRole
+          - Arn
+      Runtime: nodejs6.10
+      Code:
+        ZipFile: |
+          AWS = require('aws-sdk');
+
+          exports.handler = function(event, context) {
+              const message = event.Records[0].Sns.Message;
+              if (message.indexOf("ROLLBACK_IN_PROGRESS") > -1) {
+                  var fields = message.split("\n");
+                  var subject = fields[11].replace(/['']+/g, '');
+                  var account_id = context.invokedFunctionArn.split(":")[4]
+                  var region = process.env.AWS_DEFAULT_REGION
+                  var topic_arn = "arn:aws:sns:" + region + ":" + account_id + ":error-notification"
+                  send_SNS_notification(subject, message, topic_arn);
+              }
+          };
+
+          function send_SNS_notification(subject, message, topic_arn) {
+              var sns = new AWS.SNS();
+              subject = subject + " is in ROLLBACK_IN_PROGRESS";
+              sns.publish({
+                  Subject: subject,
+                  Message: message,
+                  TopicArn: topic_arn
+              }, function(err, data) {
+                  if (err) {
+                      console.log(err.stack);
+                      return;
+                  }
+                  console.log('push sent');
+                  console.log(data);
+              });
+          }
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 37a751e3-baf3-479d-b157-96a392b92f49
+  AllowSnsErrorNotify:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt 
+        - ErrorNotifyLambda
+        - Arn
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref CloudFormationEventsTopic
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 915ea2ae-114e-4977-b91c-60ae49753450
 
