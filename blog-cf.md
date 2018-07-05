@@ -13,7 +13,7 @@ only needed during daytime hours, or sometimes only during certain project phase
 How will you know that the template you wrote and used today will still work when you need it again months from now?
 A simple daily test should give you that confidence and notify you if anything breaks.
  So, how can we set up daily CF stack creation and removal? Answer: Lambda + CloudWatch Rules. This blog works through 
- understanding a template that sets up this kind of daily test.
+ a template that sets up this kind of daily test.
 
 For the sake of having an example CF stack, we are using the [Docker for AWS Community Edition](https://docs.docker.com/docker-for-aws/#quickstart)
 as the CF template that's being tested, but the idea is that you would use your own project's template instead.
@@ -52,7 +52,7 @@ Click "Next" and then enter a stack name and the name of your SSH key pair.
 
 ![Stack Details](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/stack-details.png)
 
-Click "Next", then "Next" again (to use the default options), and then "Create". Enable the checkbox for IAM resource capabilities.
+Click "Next", then "Next" again (to use the default options), enable the checkbox for IAM resource capabilities, and then "Create".
 
 ![IAM Acknowledge](https://github.com/pknell/cloud-formation-daily-test/blob/master/cf-images/iam-acknowledge.png)
 
@@ -318,11 +318,13 @@ rules, but with CloudFormation it needs to be done explicitly. The FunctionName 
 or [alias](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-alias.html) of the Lambda function.
 
 The last task is to set-up email (or SMS) notification so that someone will be notified whenever the CF stack creation
-or deletion is unsuccessful. The process for doing this is somewhat tedious,
-but AWS has [documented it here](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-rollback-email/).
-I've worked through these steps using Terraform, so you can refer to [the "error-notify-using-sms" branch](https://github.com/pknell/cloud-formation-daily-test/tree/error-notify-using-sms)
-of my GitHub project (see [error-notification.tf](https://github.com/pknell/cloud-formation-daily-test/blob/error-notify-using-sms/error-notification.tf),
-and the NotificationARNs added to [start_env_lambda](https://github.com/pknell/cloud-formation-daily-test/blob/error-notify-using-sms/start_env_lambda/index.js)).
+or deletion is unsuccessful. The process for doing this is somewhat tedious, but AWS has [documented it here](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-rollback-email/).
+You can refer to [the "error-notify-using-sms" branch](https://github.com/pknell/cloud-formation-daily-test/tree/error-notify-using-sms)
+of my GitHub project for an example. Essentially, it entails:
+ 1. Additional template parameter for email address (or SMS phone number)
+ 1. Addition of: IAM policies and roles and SNS topics
+ 1. Addition of NotificationARNs parameter during stack creation, and Lambda function for SNS publish if stack creation rolls-back due to failure
+ 1. Revision of the StartEnvironment lambda function to write to the SNS topic if an error is received
 
 ## Clean-up
 When you're done, you can remove the stack via the CloudFormation console:
@@ -332,6 +334,6 @@ When you're done, you can remove the stack via the CloudFormation console:
 If the environment is started and not stopped (e.i., the stack called "MyStack" exists), then remove that stack as well.
 
 ## Conclusion
-Although there are a number of components involved (i.e., IAM, CloudWatch, Lambda, CloudFormation), the solution for
-automating a daily test of a CloudFormation Stack is fairly simple. And, with the help of the presented template, it
-becomes so easy to set-up that there's little reason not to.
+Although there are a number of services involved (i.e., IAM, CloudWatch, Lambda, CloudFormation), the solution for
+automating a daily test of a CloudFormation Stack is fairly simple. The addition of email or SMS notification adds a
+number of additional components, but it is still practical and easily understood.
