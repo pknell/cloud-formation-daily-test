@@ -27,9 +27,10 @@ The test works as follows: CloudWatch Rules are used to trigger Lambda functions
 can tweak to adjust the start/stop times. The Lambda functions will, respectively, create and delete the CF stack.
 
 You can set up this test in your own AWS account by using [this CF template](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment-cf.yaml).
-The remainder of this article (after account creation) works through understanding this template.  If, instead, you'd like to learn
-a little Terraform, here's an equivalent [Terraform template](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment.tf)
+The remainder of this article (after account creation) works through understanding this template.
 
+This is part 1 of a 2-part series. In the [second article](https://github.com/pknell/cloud-formation-daily-test/blob/master/blog.md), I re-write this article's CloudFormation template using Terraform,
+and then compare the two technologies.
 
 ## Create an AWS Account
 
