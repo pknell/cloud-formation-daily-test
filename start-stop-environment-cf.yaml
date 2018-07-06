@@ -166,10 +166,9 @@ Resources:
       Handler: index.handler
       MemorySize: 128
       Timeout: 15
-      Role:
-        'Fn::GetAtt':
-          - ManageEnvRole
-          - Arn
+      Role: !GetAtt
+        - ManageEnvRole
+        - Arn
       Runtime: nodejs6.10
       Code:
         ZipFile: |
@@ -226,10 +225,9 @@ Resources:
       Handler: index.handler
       MemorySize: 128
       Timeout: 15
-      Role:
-        'Fn::GetAtt':
-          - ManageEnvRole
-          - Arn
+      Role: !GetAtt
+        - ManageEnvRole
+        - Arn
       Runtime: nodejs6.10
       Code:
         ZipFile: |
