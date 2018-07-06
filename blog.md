@@ -1,94 +1,55 @@
-# AWS CloudFormation Daily Testing
-*By Paul Knell*
-
-When it comes to Amazon Web Services (AWS), most infrastructure scripting is done using either
-[CloudFormation (CF)](https://aws.amazon.com/cloudformation), which is an AWS service,
-or [Terraform](https://www.terraform.io/) (an open-source tool). These tools allow you to represent all the
-resources in your cloud environment using template files, thereby allowing
-you to easily create additional similar environments for purposes such as development, testing, and 
-quality assurance. These extra test environments are not necessarily always needed--sometimes they're
-only needed during daytime hours, or sometimes only during certain project phases. By testing your templates
-periodically (such as each weekday), you'll have confidence that they work and are being properly maintained.
-Furthermore, if you have a test environment that only needs to run during the day, and not at night (for cost savings),
-you can test your template each morning and test the tear-down each night. But how can you automate this?
-Answer: Lambda + CloudWatch Rules.
-
-This blog works through setting up this kind of daily test.
-For the sake of an example, we are using the [Docker for AWS Community Edition](https://docs.docker.com/docker-for-aws/#quickstart)
-as the CF template that's being tested, but the idea is that you would use your own 
-project's template instead. We're also using a [Terraform template](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment.tf)
-in order to set up the test and give it an
-automated daily schedule. However, instead of Terraform, you could accomplish the same result using CloudFormation
-or manually using the AWS console.
-The image below depicts the entire setup, and we'll walk through how to run and understand the Terraform template
-that sets everything up.
-All you will need is an AWS account and a local installation of Terraform. 
-
-![Overview Diagram](https://github.com/pknell/cloud-formation-daily-test/blob/master/diagram.png)
-
-CloudWatch Rules are used to trigger Lambda functions based on cron expressions, which you can tweak to adjust
-the start/stop times. The Lambda functions will, respectively, create and delete the CF
-stack. Yes--it's really that simple.
-
-## Create an AWS Account
-
-You can skip this section if you already have an account. To create an account, go to https://aws.amazon.com and
-select "Create AWS Account" at the upper-right corner of the window (alternatively, click the "Sign In" button and then 
-"Create a New Account"). Enter your email address, password, and password confirmation. On the next couple screens, you'll enter
-your address, phone number, and credit card information. Upon completion for the form, you'll receive a 4-digit code,
-and then an automated phone call where you'll be prompted to enter the code to activate your account. There is a
-12-month "Free Tier" that this blog's example stays within, but if you incur any charges they'll be posted to your card.
-I had only $0.02 charged to my card while developing/testing this example. Check your email for messages that
-welcome you to AWS, and then [log-in to the console](https://console.aws.amazon.com). Once logged-in, check that the
-"N. Virginia" region is selected in the upper-right drop-down menu, because this blog's example uses "region = us-east-1"
-(which is N. Virginia) at the start of the Terraform template.
+# Terraform Template for AWS CloudFormation Daily Testing
+Here's a Terraform template that's roughly equivalent to the [CloudFormation (CF) template presented
+previously](https://github.com/pknell/cloud-formation-daily-test/blob/master/blog.md).
+Although on a real project you wouldn't be using a Terraform template to test
+a CloudFormation template (as they're competing technologies so you'd use one or the other), this
+article presents the Terraform version of the template for comparison purposes. We'll be able to see
+how the two technologies are similar, and also highlight some of the differences.
 
 ## Install Terraform
-You'll need Terraform installed and added to your path. Refer to the [Terraform installation documentation](https://www.terraform.io/intro/getting-started/install.html).
+In addition to having an AWS account, you'll also need to install Terraform and add it to your path.
+Refer to the [Terraform installation documentation](https://www.terraform.io/intro/getting-started/install.html) for details.
 
-You'll also need to give Terraform access to your AWS account, by following these steps:
+You'll need to give Terraform access to your AWS account, by following these steps:
 1. Create an Access Key and Secret Access Key, refer to [https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/)
 1. Pass the access key and secret access key into Terraform, refer to [https://terraform.io/docs/providers/aws/index.html](https://terraform.io/docs/providers/aws/index.html)
 
-For step 2, I used the "Shared Credentials File" approach by merely creating a ".aws/credentials" file in my user's home
-directory with the following content:
+For step 2 above, the easiest approach is the "Shared Credentials File"--merely create a ".aws/credentials" file in
+your user's home directory with the following content:
 ```
 [default]
 aws_access_key_id=YOUR-ACCESS-KEY
 aws_secret_access_key=YOUR-SECRET-ACCESS-KEY
 ```
 
+## Create an SSH Key Pair
+You will need an SSH Key Pair in EC2 because it is required by the "Docker for AWS" CF template that this example is
+using. If you do not have one, [create it using the EC2 console](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair)
+and remember its name for the next step.
+
 ## Run Terraform
+Unlike CloudFormation, you will not use the AWS console to run the template file. Instead, you need to have the files
+locally in a new directory.  You can download the files from my public GitHub repository: [https://github.com/pknell/cloud-formation-daily-test](https://github.com/pknell/cloud-formation-daily-test).
+You can clone the repository with a git client, or merely [download and extract the zip](https://github.com/pknell/cloud-formation-daily-test/archive/master.zip).
 
-You will need an SSH Key Pair in EC2 because it is required by the "Docker for AWS" CF template, so
-it needs to pre-exist. If you do not have one, [create it using the EC2 console](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair) and remember its name for the
-next step.
-
-Download the Terraform template and its dependencies from my
-public GitHub repository: [https://github.com/pknell/cloud-formation-daily-test](https://github.com/pknell/cloud-formation-daily-test).
-An easy way to get all the files is to [download and extract the zip](https://github.com/pknell/cloud-formation-daily-test/archive/master.zip).
-
-Then, open a shell into the extracted directory, and run "terraform init". This will download and install the AWS plugin
- for Terraform.
+To run the template, open a shell into the extracted directory, and run "terraform init". This will download and install
+the Terraform plugins that are used by the templates found in the current directory.  For this example, these are
+the provider-aws plugin and the provider-archive plugin.
  
 Next, run "terraform apply". You will be prompted to enter the name of your SSH Key Pair, to confirm that you want to
 continue, and then Terraform will create all of the template's resources. The next section of this blog explains each
 resource.
 
-The "terraform apply" command also creates a terraform.tfstate file in the current directory. This file is used by Terraform to remember
-the identifiers of created resources, so they can be updated or removed.
+The "terraform apply" command also creates a terraform.tfstate file in the current directory. This file is used by 
+Terraform to remember the identifiers of created resources, so they can be updated or removed. For AWS, there is an
+[S3 Backend](https://www.terraform.io/docs/backends/types/s3.html) that replaces the local tfstate file with an S3 bucket
+and DynamoDB (for locking)--you'll want to use this if working on a team collaboratively, but for this example it's fine
+to use the local (default) backend.
 
-You can now use the AWS console to view the resources that Terraform created:
-1. Go to CloudWatch, then Rules (under the Events sub-menu), and you'll see both the Start and Stop rules.
-1. Go to Lambda, and you'll see both the Start and Stop Lambda functions.
-1. At 9:30 AM CDT (or 14:30 UTC) the next day, you can go to CloudFormation to view the stack. Then, 30 minutes later,
-you can view the stack being deleted.
-1. If you do not want to wait until 9:30 AM, you can adjust the cron expressions and run "terraform apply" again to
-deploy the change. You can find information on the cron format in the [CloudWatch Scheduled Events documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#CronExpressions).
-1. After the Lambda function(s) have executed, you can go to [Logs in the CloudWatch console](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logs:)
-to view logs created by Lambda.
-1. While the CloudFormation stack is up, you can use your SSH key to connect an SSH client to the running EC2 instances
-that are part of the [Docker Swarm](https://docs.docker.com/engine/swarm/key-concepts/).
+When "terraform apply" completes successfully, you'll have all the resources needed for the automatic daily test of the
+CloudFormation template: the IAM policies and roles, the CloudWatch Events (Rules), the Lambda functions and Lambda
+permissions. The stack (for "Docker for AWS") will be automatically created and removed, per the schedule of the cron
+expressions.
 
 ## Terraform Walk-Through
 The Terraform template file is called [start-stop-environment.tf](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment.tf).
@@ -105,7 +66,9 @@ data "aws_region" "current" {}
 This provider specifies the region, which is required when using Terraform with AWS. 
 If the region was omitted, Terraform will prompt for it (similar to the prompt for the ssh_key_name).
 The aws_caller_identity and aws_region data sources are used later in the template when we need to reference
-the current region and account ID.
+the current region and account ID.  If you're using a different region (other than us-east-1), such as if you're SSH
+Key Pair is in a different region, then you'll need to adjust the region in the template file (or remove that line, so
+that Terrform will prompt for it).
 
 After the provider, the template declares a variable called ssh_key_name. This is needed because it's a required
 parameter to the CF template (for Docker) that we're running. Terraform prompts the user for this value if it's not
@@ -330,25 +293,104 @@ The creation of these (above) permissions is done for you automatically when you
 Terraform it needs to be done explicitly. The aws_lambda_permission resource also has an optional qualifier attribute
 (although I'm not using it here) which allows you to specify a particular version of the Lambda function.
 
-The last task is to set-up email notification so that someone will be notified whenever the CF stack creation
+The last task is to set-up email (or SMS) notification so that someone will be notified whenever the CF stack creation
 or deletion is unsuccessful. The process for doing this is somewhat tedious,
-but AWS has [documented it here](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-rollback-email/).
+but AWS has [documented it here](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-rollback-email/)
+and I have a Terrform example (in [my error-notify-using-sms branch](https://github.com/pknell/cloud-formation-daily-test/tree/error-notify-using-sms)).
+Accomplishing the error notification with Terraform is similar to what was done in CloudFormation, except that the
+new resources were placed in a separate file "error-notification.tf".
+
+## Comparison: Terraform vs. CloudFormation
+This is a comparison that's written in the context of my experience in developing this article's templates (for
+the Daily CloudFormation Test). As such, not all aspects or features are covered, but just those that were
+significant in my experience. Many of these differences are described accurately [in this article](https://cloudonaut.io/cloudformation-vs-terraform/),
+but here I provide some detailed examples.
+
+#### Template Syntax
+Other than Terraform's multi-provider support (i.e., support for various Cloud vendors), the main difference between 
+Terraform and CloudFormation is the syntax of the template files. CloudFormation supports both JSON and YAML formats,
+whereas Terraform supports both JSON and a proprietary [HashiCorp Configuration Language (HCL)](https://github.com/hashicorp/hcl).
+In both cases, the non-JSON option is more concise and easier for human editing than JSON. Compared to CloudFormation's
+YAML syntax, Terraform's HCL syntax is more concise and easier to work with. This is partly because of
+Terraform's [interpolation syntax](https://www.terraform.io/docs/configuration/interpolation.html)--for example, accessing
+a resource's ARN is a one-liner in Terraform:
+```
+role = "${aws_iam_role.manage_environment_iam_role.arn}"
+```
+But it's 3 lines in CloudFormation:
+```
+Role: !GetAtt
+  - ManageEnvRole
+  - Arn
+```
+
+#### Multi-file Support
+Both CloudFormation and Terraform support dividing a template into multiple files, however they support this differently.
+The CloudFormation support uses the concept of parent/child stacks, where the parent template references the file of
+the child (which then becomes a nested stack). Template parameters and outputs will then need to be used to pass data
+between the various template files. The parent can have multiple children, and a child could also be a parent in order
+to create a deeper level of nesting.  The approach used by Terraform is that all template files in the current directory
+are included, and there is an "override" filename convention to specify files that are processed last that take precedence.
+Furthermore, there is a "module" concept that allows other directories to be referenced, and thus included. The
+Terraform approach is easier to work with because the developer does not need to explicitly reference each file (from
+the main parent) and does not need to create parameters and outputs for each data element that needs to be shared
+across files.
+
+Another important observation, is that using multiple files in CloudFormation requires that the files be placed into S3,
+whereas with Terraform they just need to exist locally (or wherever the terraform binary is executed). Being able to
+skip the step of copying files to S3 is very convenient. I also noticed that this is true regarding Lambda code--e.g.,
+if I wanted to avoid embedding the Lambda NodeJS functions in the CF template, I would have needed to create a zip file
+for each and upload it to an S3 bucket.  With Terraform, it was easy to just keep the code in a separate file, and use
+the archive plugin to zip it up when Terraform runs.
+
+#### Development Tooling
+Terraform usage is entirely command-line based. I found the commands easy to work with, and output easy to understand.
+Error messages were clear and made it easy to understand how to fix problems. There's a command to apply changes, and
+a different command to merely view what the changes will be. While CloudFormation has a preview feature, I prefer the
+ clarity of Terraform's output over that of CloudFormation. For example, if I update the CloudFormation stack to change
+ the StartRule's cron expression, it will show me the impacted resources, but the details of exactly which property is
+ being changed is shown as verbose JSON without the before/after values:
+![CloudFormation Preview Change](https://github.com/pknell/cloud-formation-daily-test/blob/master/comparison-images/cf-preview-change.png)
+ 
+However, Terraform prints a friendly message including before/after values:
+![Terraform Preview Change](https://github.com/pknell/cloud-formation-daily-test/blob/master/comparison-images/tf-preview-change.png)
+
+CloudFormation can be used by command-line (as is Terraform) via the AWS CLI. However, it can also be graphical via 
+web-browser. There is a [Template Designer tool](https://console.aws.amazon.com/cloudformation/designer/) that helps
+when writing new templates--but it only sets up the skeleton; you have to add property details directly into the
+JSON or YAML. However, I did find it useful, particularly because it generates a nice dependency diagram of all the
+template's resources.
+
+There's also a CloudFormer tool--however it is a Beta version, and it requires a number of manual steps that the developer
+ must do to the generated template to bring it up to the desired quality.  Despite these drawbacks, it is sometimes
+ useful for saving time when creating new templates versus writing them entirely from scratch or with the Designer.
+
+Terraform does not have an equivalent mechanism for generating a
+template--however, for most resources there is support for an ["import" feature](https://www.terraform.io/docs/import/index.html).
+While this feature does not (yet) actually generate templates, it does facilitate creation of a template based on 
+existing resources. I was able to create resources using the AWS console, write skeletons for those resources into
+the template file, and then run "terraform import ..." commands to bring those resources into the local Terraform State
+(terraform.tfstate). Each resource needed to be separately imported. After importing them, I could run "terraform plan" to see the details for each resource, and use
+those details to update the template file. After updating the template file with the details, I ran "terraform plan"
+again to view differences--and repeated this process until no more differences existed. This process got me very close
+to having a working template, and seemed to be much quicker than the many develop/test cycles that would have otherwise
+been needed to develop the template from scratch.  However, I did come across a number of resource types where Import
+was not supported.
+
+#### API Completeness
+The CloudFormation User Guide documents the [list of AWS services that it supports](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-supported-resources.html).
+The [reference documentation for the Terraform AWS Provider](https://www.terraform.io/docs/providers/aws/index.html)
+documents the AWS services that Terraform supports. When comparing the lists, one finds that both are exhaustive and
+seemingly complete. This stands to reason due to the partnership [between Hashicorp and AWS](https://www.hashicorp.com/integrations/aws),
+and the fact that Terraform is Open Source.
+When working with Terraform, I only ran into one AWS feature that was not directly supported: the "email" protocol of an SNS Subscription.
+The lack of support for this is documented in the [aws_sns_topic_subscription documentation](https://www.terraform.io/docs/providers/aws/r/sns_topic_subscription.html).
+I worked around this by using SMS instead, as it was readily supported by both CF and Terraform.
 
 ## Clean-up
-You can delete all the resources that Terraform created by returning to the shell in your "cloud-formation-daily-test"
-directory and running the command "terraform destroy". If you want to leave the resources in place, but disable the
+You can delete all the resources that Terraform created by returning to the shell (in the directory containing the project files)
+ and running the command "terraform destroy". If you want to leave the resources in place, but disable the
 daily test, you can simply disable both CloudWatch rules. You can do this in the AWS console, or you can edit both
 of the aws_cloudwatch_event_rule resources in start-stop-environment.tf so that they contain "enabled = false", and 
-then run "terraform apply". When you're done, if you're no longer planning to use your AWS account for other purposes,
-you can delete it by:
-1. Delete all resources (e.g., "terraform destroy" as previously described)
-1. In AWS console, click your username (the drop-down in the upper-right) 
-1. Select "My Account"
-1. Look for the "Close Account" section at the very bottom of the page and read the disclaimer
-1. Click the checkbox and the red button
-
-## Conclusion
-Although there are a number of components involved (i.e., IAM, CloudWatch, Lambda, CloudFormation), the solution for
-automating the testing of a CloudFormation Stack is fairly simple. And, with the help of the presented Terraform
-template, it becomes so easy to set-up that there's little reason not to.
-In the spirit of continuous testing and cost savings, enjoy!
+then run "terraform apply".
+ 
