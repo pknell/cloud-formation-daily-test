@@ -328,22 +328,20 @@ Role: !GetAtt
 
 #### Multi-file Support
 Both CloudFormation and Terraform support dividing a template into multiple files, however they support this differently.
-The CloudFormation support uses the concept of parent/child stacks, where the parent template references the file of
-the child (which then becomes a nested stack). Template parameters and outputs will then need to be used to pass data
-between the various template files. The parent can have multiple children, and a child could also be a parent in order
-to create a deeper level of nesting.  The approach used by Terraform is that all template files in the current directory
-are included, and there is an "override" filename convention to specify files that are processed last that take precedence.
-Furthermore, there is a "module" concept that allows other directories to be referenced, and thus included. The
-Terraform approach is easier to work with because the developer does not need to explicitly reference each file (from
-the main parent) and does not need to create parameters and outputs for each data element that needs to be shared
-across files.
+CloudFormation uses the concept of [nested stacks](https://aws.amazon.com/blogs/devops/use-nested-stacks-to-create-reusable-templates-and-support-role-specialization/),
+where the parent template references the file of the child. Template parameters and outputs are then used to pass data
+between the various nested stacks. The approach used by Terraform is that all template files in the current directory
+are included (as a default module), and there is an "override" filename convention to specify files that are processed
+last and take precedence.
+Furthermore, [additional modules can be referenced](https://www.terraform.io/docs/modules/usage.html), and thus instantiated. The
+Terraform approach is easier to work with, in my opinion, because the developer does not need to explicitly reference 
+each file (within a module) and does not need to create parameters and outputs for passing data within a module.
 
 Another important observation, is that using multiple files in CloudFormation requires that the files be placed into S3,
-whereas with Terraform they just need to exist locally (or wherever the terraform binary is executed). Being able to
-skip the step of copying files to S3 is very convenient. I also noticed that this is true regarding Lambda code--e.g.,
-if I wanted to avoid embedding the Lambda NodeJS functions in the CF template, I would have needed to create a zip file
-for each and upload it to an S3 bucket.  With Terraform, it was easy to just keep the code in a separate file, and use
-the archive plugin to zip it up when Terraform runs.
+whereas with Terraform they can be local (or there are [many other options](https://www.terraform.io/docs/modules/sources.html),
+including S3). Being able to skip the step of copying files to S3 was very convenient. A similar constraint also
+exists for the code of the Lambda functions--with CloudFormation it would have needed to be placed into S3 if it wasn't
+embedded within the template, whereas with Terraform it was easy to reference a local file.
 
 #### Development Tooling
 Terraform usage is entirely command-line based. I found the commands easy to work with, and output easy to understand.
