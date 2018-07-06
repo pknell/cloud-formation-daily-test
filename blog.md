@@ -1,6 +1,6 @@
 # Terraform Template for AWS CloudFormation Daily Testing
 Here's a Terraform template that's roughly equivalent to the [CloudFormation (CF) template presented
-previously](https://github.com/pknell/cloud-formation-daily-test/blob/master/blog.md).
+previously](https://github.com/pknell/cloud-formation-daily-test/blob/master/blog-cf.md).
 Although on a real project you wouldn't be using a Terraform template to test
 a CloudFormation template (as they're competing technologies so you'd use one or the other), this
 article presents the Terraform version of the template for comparison purposes. We'll be able to see
