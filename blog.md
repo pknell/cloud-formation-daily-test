@@ -51,7 +51,7 @@ to use the local (default) backend.
 When "terraform apply" completes successfully, you'll have all the resources needed for the automatic daily test of the
 CloudFormation template: the IAM policies and roles, the CloudWatch Events (Rules), the Lambda functions and Lambda
 permissions. The stack (for "Docker for AWS") will be automatically created and removed, per the schedule of the cron
-expressions.
+expressions (as was explained in [part 1 of this series](https://github.com/pknell/cloud-formation-daily-test/blob/master/blog-cf.md)).
 
 ## Terraform Walk-Through
 The Terraform template file is called [start-stop-environment.tf](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment.tf).
