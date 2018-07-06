@@ -361,7 +361,8 @@ CloudFormation can be used by command-line (as is Terraform) via the AWS CLI. Ho
 web-browser. There is a [Template Designer tool](https://console.aws.amazon.com/cloudformation/designer/) that helps
 when writing new templates--but it only sets up the skeleton; you have to add property details directly into the
 JSON or YAML. However, I did find it useful, particularly because it generates a nice dependency diagram of all the
-template's resources.
+template's resources. Terraform also has a way to generate a dependency diagram with the "terraform graph" command,
+but CF's Designer is a graphical editor.
 
 There's also a CloudFormer tool--however it is a Beta version, and it requires a number of manual steps that the developer
  must do to the generated template to bring it up to the desired quality.  Despite these drawbacks, it is sometimes
@@ -369,15 +370,19 @@ There's also a CloudFormer tool--however it is a Beta version, and it requires a
 
 Terraform does not have an equivalent mechanism for generating a
 template--however, for most resources there is support for an ["import" feature](https://www.terraform.io/docs/import/index.html).
-While this feature does not (yet) actually generate templates, it does facilitate creation of a template based on 
-existing resources. I was able to create resources using the AWS console, write skeletons for those resources into
-the template file, and then run "terraform import ..." commands to bring those resources into the local Terraform State
-(terraform.tfstate). Each resource needed to be separately imported. After importing them, I could run "terraform plan" to see the details for each resource, and use
-those details to update the template file. After updating the template file with the details, I ran "terraform plan"
-again to view differences--and repeated this process until no more differences existed. This process got me very close
-to having a working template, and seemed to be much quicker than the many develop/test cycles that would have otherwise
-been needed to develop the template from scratch.  However, I did come across a number of resource types where Import
-was not supported.
+While this feature does not (yet) actually generate templates, it does facilitate the creation of a template based on 
+existing resources by using a process as follows:
+ 1. Create resources using the AWS console and test functionality
+ 1. Write skeletons for those resources into the template file
+ 1. Run "terraform import ..." commands to bring those resources into the local Terraform State
+(terraform.tfstate). Each resource needed to be separately imported.
+ 1. Run "terraform plan" to see the details for each new resource
+ 1. Use those details to update the template file (the properties of each new resource)
+ 1. Run "terraform plan" again to view differences, repeating until no more differences exist
+ 
+This process got me very close to having a working template, and seemed to be much quicker than the many develop/test
+cycles that would have otherwise been needed to develop the template from scratch.  However, I did come across a number
+of resource types where Import was not supported.
 
 #### API Completeness
 The CloudFormation User Guide documents the [list of AWS services that it supports](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-supported-resources.html).
