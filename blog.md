@@ -350,9 +350,11 @@ a different command to merely view what the changes will be. While CloudFormatio
  clarity of Terraform's output over that of CloudFormation. For example, if I update the CloudFormation stack to change
  the StartRule's cron expression, it will show me the impacted resources, but the details of exactly which property is
  being changed is shown as verbose JSON without the before/after values:
+ 
 ![CloudFormation Preview Change](https://github.com/pknell/cloud-formation-daily-test/blob/master/comparison-images/cf-preview-change.png)
  
 However, Terraform prints a friendly message including before/after values:
+
 ![Terraform Preview Change](https://github.com/pknell/cloud-formation-daily-test/blob/master/comparison-images/tf-preview-change.png)
 
 CloudFormation can be used by command-line (as is Terraform) via the AWS CLI. However, it can also be graphical via 
