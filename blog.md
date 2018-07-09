@@ -1,10 +1,10 @@
 # Terraform Template for AWS CloudFormation Daily Testing
-*By Paul Knell*
+*© 2018 Paul Knell, NVISIA LLC*
 
 This is part 2 of a 2-part series. In this part, I present a Terraform template that's roughly equivalent
 to the [CloudFormation (CF) template presented in part 1](https://github.com/pknell/cloud-formation-daily-test/blob/master/blog-cf.md).
 Although on a real project you wouldn't be using a Terraform template to test
-a CloudFormation template (as they're competing technologies so you'd use one or the other), this
+a CloudFormation template (as they're competing technologies so you'd probably use either one or the other), this
 article presents the Terraform version for purposes of comparison. We'll be able to see
 how the two technologies are similar, and also highlight some of the differences.
 
@@ -43,7 +43,7 @@ continue, and then Terraform will create all of the template's resources. The ne
 resource.
 
 The "terraform apply" command also creates a terraform.tfstate file in the current directory. This file is used by 
-Terraform to remember the identifiers of created resources, so they can be updated or removed. For AWS, there is an
+Terraform to store information regarding created resources, so they can be updated or removed. For AWS, there is an
 [S3 Backend](https://www.terraform.io/docs/backends/types/s3.html) that replaces the local tfstate file with an S3 bucket
 and DynamoDB (for locking)--you'll want to use this if working on a team collaboratively, but for this example it's fine
 to use the local (default) backend.
@@ -291,20 +291,14 @@ resource "aws_lambda_permission" "allow_cloudwatch_stop_env" {
 }
 ```
 
-The creation of these (above) permissions is done for you automatically when you're using the AWS console, but with
-Terraform it needs to be done explicitly. The aws_lambda_permission resource also has an optional qualifier attribute
-(although I'm not using it here) which allows you to specify a particular version of the Lambda function.
-
-The last task is to set-up email (or SMS) notification so that someone will be notified whenever the CF stack creation
-or deletion is unsuccessful. The process for doing this is somewhat tedious,
-but AWS has [documented it here](https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-rollback-email/)
-and I have a Terrform example (in [my error-notify-using-sms branch](https://github.com/pknell/cloud-formation-daily-test/tree/error-notify-using-sms)).
-Accomplishing the error notification with Terraform is similar to what was done in CloudFormation, except that the
-new resources were placed in a separate file "error-notification.tf".
+As you can see, if you've worked through the previous article (part 1 of this series), this is all very similar to what
+we did with CloudFormation; it's mostly just a different syntax.  Error notification is also similar--for a Terraform
+example, you can refer to [my error-notify-using-sms branch](https://github.com/pknell/cloud-formation-daily-test/tree/error-notify-using-sms),
+particularly the file "[error-notification.tf](https://github.com/pknell/cloud-formation-daily-test/raw/error-notify-using-sms/error-notification.tf)".
 
 ## Comparison: Terraform vs. CloudFormation
-This is a comparison that's written in the context of my experience in developing this article's templates (for
-the Daily CloudFormation Test). As such, not all aspects or features are covered, but just those that were
+This is a comparison that's written in the context of my experience in developing this article's templates.
+As such, not all aspects or features are covered, but just those that were
 significant in my experience. Many of these differences are described accurately [in this article](https://cloudonaut.io/cloudformation-vs-terraform/),
 but here I provide some detailed examples.
 
@@ -340,13 +334,13 @@ each file (within a module) and does not need to create parameters and outputs f
 Another important observation, is that using multiple files in CloudFormation requires that the files be placed into S3,
 whereas with Terraform they can be local (or there are [many other options](https://www.terraform.io/docs/modules/sources.html),
 including S3). Being able to skip the step of copying files to S3 was very convenient. A similar constraint also
-exists for the code of the Lambda functions--with CloudFormation it would have needed to be placed into S3 if it wasn't
-embedded within the template, whereas with Terraform it was easy to reference a local file.
+exists for the code of the Lambda functions--with CloudFormation the code would have needed to be zip'ed and placed into S3
+if it wasn't embedded within the template, whereas with Terraform it was easy to reference a local file.
 
 #### Development Tooling
 Terraform usage is entirely command-line based. I found the commands easy to work with, and output easy to understand.
 Error messages were clear and made it easy to understand how to fix problems. There's a command to apply changes, and
-a different command to merely view what the changes will be. While CloudFormation has a preview feature, I prefer the
+a different command to merely view what the changes will be. While CloudFormation also has a preview feature, I prefer the
  clarity of Terraform's output over that of CloudFormation. For example, if I update the CloudFormation stack to change
  the StartRule's cron expression, it will show me the impacted resources, but the details of exactly which property is
  being changed is shown as verbose JSON without the before/after values:

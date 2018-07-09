@@ -1,5 +1,5 @@
 # AWS CloudFormation Daily Testing
-*By Paul Knell*
+*© 2018 Paul Knell, NVISIA LLC*
 
 When it comes to Amazon Web Services (AWS), infrastructure scripting is typically done using either
 [CloudFormation (CF)](https://aws.amazon.com/cloudformation), which is an AWS service,
@@ -226,7 +226,8 @@ exports.handler = function(event, context, callback) {
 All we're doing in this function is:
 1. Import aws-sdk so that we can access the CloudFormation API
 1. Create the parameters needed to create a Stack. The parameter called "Parameters" is for the CF template's 
-parameters (as opposed to parameters of the createStack call).
+parameters (as opposed to parameters of the createStack call). When you're testing with your own project (rather than Docker.templ),
+you'll probably have different parameters because 'KeyName', 'ManagerSize', and 'ClusterSize' are specific to the Docker template.
 1. Initiate creation of the Stack
 
 The function for stopping the environment is similar:
