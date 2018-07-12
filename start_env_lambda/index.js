@@ -39,10 +39,22 @@ exports.handler = function(event, context, callback) {
    };
    cloudformation.createStack(params, function(err, data) {
      if (err) {
-        callback("Error creating the Stack: "+err); 
+       var sns = new AWS.SNS();
+       var topic_arn = "arn:aws:sns:" + region + ":" + account_id + ":error-notification"
+       sns.publish({
+         Subject: 'Error during createStack',
+         Message: 'Error during createStack: ' + err,
+         TopicArn: topic_arn
+       }, function(err, data) {
+         if (err) {
+           console.log(err.stack);
+         }
+       });
+       callback("Error creating the Stack: "+err); 
      }
      else {
-        callback(null, "Success creating the Stack.");
+       callback(null, "Success creating the Stack.");
      }
    });
 }
+
