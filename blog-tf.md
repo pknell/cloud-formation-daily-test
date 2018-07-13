@@ -42,6 +42,9 @@ Next, run "terraform apply". You will be prompted to enter the name of your SSH 
 continue, and then Terraform will create all of the template's resources. The next section of this blog explains each
 resource.
 
+** Disclaimer: You are responsible for charges to your AWS account, therefore please remember to clean-up when you're done
+to avoid uneccessary costs. Refer to the "Clean-up" section near the end of this article. **
+
 The "terraform apply" command also creates a terraform.tfstate file in the current directory. This file is used by 
 Terraform to store information regarding created resources, so they can be updated or removed. For AWS, there is an
 [S3 Backend](https://www.terraform.io/docs/backends/types/s3.html) that replaces the local tfstate file with an S3 bucket
