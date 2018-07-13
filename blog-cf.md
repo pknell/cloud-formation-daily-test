@@ -29,8 +29,8 @@ can tweak to adjust the start/stop times. The Lambda functions will, respectivel
 You can set up this test in your own AWS account by using [this CF template](https://github.com/pknell/cloud-formation-daily-test/blob/master/start-stop-environment-cf.yaml).
 The remainder of this article (after account creation) works through understanding this template.
 
-** Disclaimer: You are responsible for charges to your AWS account, therefore please remember to clean-up when you're done
-to avoid uneccessary costs. Refer to the "Clean-up" section near the end of this article. **
+**Disclaimer: You are responsible for charges to your AWS account,** therefore please remember to clean-up when you're done
+to avoid uneccessary costs. Refer to the "Clean-up" section near the end of this article.
 
 This is part 1 of a 2-part series. In the [second article](https://github.com/pknell/cloud-formation-daily-test/blob/master/blog-tf.md), I re-write this article's CloudFormation template using Terraform,
 and then compare the two technologies.
